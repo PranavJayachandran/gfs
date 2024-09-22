@@ -1,0 +1,21 @@
+syntax = "proto3";
+option go_package = "/pb";
+import "google/protobuf/empty.proto";
+
+service MasterService {
+    rpc HeartBeat(HeartBeatRequest) returns (google.protobuf.Empty) {}
+}
+
+service ChunkServerService{
+    rpc StoreChunk(ChunkRequest) returns (google.protobuf.Empty){}
+}
+
+message HeartBeatRequest {
+    string addr = 1;
+    repeated string chunkIds = 2; 
+    float memoryUtilization = 3; 
+}
+message ChunkRequest{
+    bytes chunk = 1;
+    string fileName = 2; 
+}
