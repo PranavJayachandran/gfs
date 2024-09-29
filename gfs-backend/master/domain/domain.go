@@ -20,6 +20,7 @@ type Server struct {
 }
 
 var MasterServer Server
+var ReplicationFactor = 3
 
 func (s *Server) HeartBeat(ctx context.Context, req *pb.HeartBeatRequest) (*emptypb.Empty, error) {
 	chunkServer := &ChunkServer{

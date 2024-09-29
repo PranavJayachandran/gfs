@@ -1,5 +1,5 @@
 package masterApplicationContracts
 
 type ChunkRepository interface {
-	SaveChunk(chunk []byte) error
+	SaveChunk(chunk []byte, fileName string) error
 }

@@ -2,11 +2,12 @@ package masterInfrastructure
 
 import (
 	"context"
-	"fmt"
 	serverDomain "gfs-go/master/domain"
 	"gfs-go/pb"
 	"log"
+	"math/rand"
 	"strings"
+	"time"
 
 	"google.golang.org/grpc"
 )
@@ -16,26 +17,27 @@ type ChunkRepository struct{}
 func NewChunkRepository() *ChunkRepository {
 	return &ChunkRepository{}
 }
-func (c *ChunkRepository) SaveChunk(chunk []byte) error {
+func (c *ChunkRepository) SaveChunk(chunk []byte, fileName string) error {
 	chunkSize := 4
 	for i := 0; i < len(chunk); i += chunkSize {
 		end := i + chunkSize
 		if end > len(chunk) {
 			end = len(chunk) // Adjust to the end of the data
 		}
-		sendToChunkServer(chunk[i:end], getChunkServerAddr())
-	}
+		chunkName := getUniqueFileName()
+		for range serverDomain.ReplicationFactor {
+			sendToChunkServer(i, chunk[i:end], getChunkServerAddr(), fileName, chunkName)
+		}
 
-	fmt.Printf("Received file content:\n%s\n", chunk)
+	}
 	return nil
 }
 func getChunkServerAddr() string {
-	if len(serverDomain.MasterServer.ChunkServers) > 0 {
-		return serverDomain.MasterServer.ChunkServers[0].ServerAddr
-	}
-	return ""
+	rand.Seed(time.Now().UnixNano())
+	randomNumber := rand.Intn(len(serverDomain.MasterServer.ChunkServers))
+	return serverDomain.MasterServer.ChunkServers[randomNumber].ServerAddr
 }
-func sendToChunkServer(chunk []byte, addr string) {
+func sendToChunkServer(offset int, chunk []byte, addr string, fileName string, chunkName string) {
 	port := strings.TrimPrefix(addr, "[::]:")
 	opts := grpc.WithInsecure()
 	cc, err := grpc.Dial("localhost:"+port, opts)
@@ -46,14 +48,17 @@ func sendToChunkServer(chunk []byte, addr string) {
 	defer cc.Close()
 
 	client := pb.NewChunkServerServiceClient(cc)
-	fmt.Println("Sending Chunk")
+	serverDomain.FileToChunkMapper[fileName] = append(serverDomain.FileToChunkMapper[fileName], serverDomain.ChunkInfo{
+		ChunkName:  chunkName,
+		ByteOffset: offset,
+	})
+	serverDomain.ChunkToChunkServerMapper[chunkName] = append(serverDomain.ChunkToChunkServerMapper[chunkName], addr)
 	request := &pb.ChunkRequest{
 		Chunk:    chunk,
-		FileName: "x",
+		FileName: chunkName,
 	}
-	res, err := client.StoreChunk(context.Background(), request)
+	_, err = client.StoreChunk(context.Background(), request)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(res)
 }

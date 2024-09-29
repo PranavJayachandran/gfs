@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"gfs-go/pb"
+	"os"
+	"path/filepath"
 
 	"google.golang.org/protobuf/types/known/emptypb"
 )
@@ -20,6 +22,15 @@ type ChunkServer struct {
 // chunksIds => should be updated whenever a chunk is added or removed.
 
 func (s *ChunkServer) StoreChunk(ctx context.Context, req *pb.ChunkRequest) (*emptypb.Empty, error) {
-	fmt.Println(req)
+	err := os.MkdirAll("files", os.ModePerm)
+	if err != nil {
+		fmt.Println("Error creating folder:", err)
+		return &emptypb.Empty{}, nil
+	}
+	err = os.WriteFile(filepath.Join("files", req.FileName), req.Chunk, 0644)
+	if err != nil {
+		fmt.Printf("File %s couldnot be created\n", req.FileName)
+	}
+	fmt.Printf("File created: %s", req.FileName)
 	return &emptypb.Empty{}, nil
 }

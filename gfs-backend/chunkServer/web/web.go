@@ -15,7 +15,7 @@ import (
 var server *chunkDomain.ChunkServer
 
 func createServer(ready chan<- struct{}) {
-	lis, err := net.Listen("tcp", ":3000")
+	lis, err := net.Listen("tcp", ":0")
 	if err != nil {
 		panic(err)
 	}

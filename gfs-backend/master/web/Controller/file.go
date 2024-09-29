@@ -15,7 +15,7 @@ func UploadFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get the file from the request
-	file, _, err := r.FormFile("file")
+	file, header, err := r.FormFile("file")
 	if err != nil {
 		http.Error(w, "Unable to retrieve file", http.StatusBadRequest)
 		return
@@ -32,7 +32,7 @@ func UploadFile(w http.ResponseWriter, r *http.Request) {
 	chunkRepo := masterInfrastructure.NewChunkRepository()
 	fileProcessor := masterApplication.NewFileProcessor(chunkRepo)
 
-	fileProcessor.SendToChunkServers(content)
+	fileProcessor.SendToChunkServers(content, header.Filename)
 	// Respond to the client
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("File uploaded successfully!"))

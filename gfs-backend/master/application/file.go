@@ -12,6 +12,6 @@ func NewFileProcessor(chunkRepo masterApplicationContracts.ChunkRepository) *Fil
 	return &FileProccessor{chunkRepo: chunkRepo}
 }
 
-func (fp *FileProccessor) SendToChunkServers(chunk []byte) {
-	fp.chunkRepo.SaveChunk(chunk)
+func (fp *FileProccessor) SendToChunkServers(chunk []byte, fileName string) {
+	fp.chunkRepo.SaveChunk(chunk, fileName)
 }
