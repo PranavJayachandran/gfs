@@ -1,7 +1,10 @@
 package masterWebController
 
 import (
+	"encoding/json"
+	"fmt"
 	masterApplication "gfs-go/master/application"
+	serverDomain "gfs-go/master/domain"
 	masterInfrastructure "gfs-go/master/infrastructure"
 	"io/ioutil"
 	"net/http"
@@ -36,4 +39,30 @@ func UploadFile(w http.ResponseWriter, r *http.Request) {
 	// Respond to the client
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("File uploaded successfully!"))
+}
+func GetFileData(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+	query := r.URL.Query()
+	fileName := query.Get("fileName")
+	var ChunkData = serverDomain.FileToChunkMapper[fileName]
+	ChunkToChunkServerData := make([]serverDomain.ChunkToChunkServer, 0)
+	for _, item := range ChunkData {
+		ChunkToChunkServerData = append(ChunkToChunkServerData, serverDomain.ChunkToChunkServer{
+			ChunkServerAddr: serverDomain.ChunkToChunkServerMapper[item.ChunkName],
+			ChunkName:       item.ChunkName,
+		})
+	}
+
+	fmt.Println(serverDomain.FileToChunkMapper[fileName])
+	w.Header().Set("Content-Type", "application/json")
+
+	// Convert the array of objects into JSON
+	err := json.NewEncoder(w).Encode(ChunkToChunkServerData)
+	if err != nil {
+		http.Error(w, "Error encoding JSON", http.StatusInternalServerError)
+		return
+	}
 }

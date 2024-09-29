@@ -11,9 +11,10 @@ service ChunkServerService{
 }
 
 message HeartBeatRequest {
-    string addr = 1;
-    repeated string chunkIds = 2; 
-    float memoryUtilization = 3; 
+    string rpcaddr = 1;
+    string restaddr = 2;
+    repeated string chunkIds = 3; 
+    float memoryUtilization = 4; 
 }
 message ChunkRequest{
     bytes chunk = 1;

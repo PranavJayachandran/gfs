@@ -18,27 +18,31 @@ func NewChunkRepository() *ChunkRepository {
 	return &ChunkRepository{}
 }
 func (c *ChunkRepository) SaveChunk(chunk []byte, fileName string) error {
-	chunkSize := 4
+	chunkSize := 10
 	for i := 0; i < len(chunk); i += chunkSize {
 		end := i + chunkSize
 		if end > len(chunk) {
 			end = len(chunk) // Adjust to the end of the data
 		}
 		chunkName := getUniqueFileName()
+		serverDomain.FileToChunkMapper[fileName] = append(serverDomain.FileToChunkMapper[fileName], serverDomain.ChunkInfo{
+			ChunkName:  chunkName,
+			ByteOffset: i,
+		})
 		for range serverDomain.ReplicationFactor {
-			sendToChunkServer(i, chunk[i:end], getChunkServerAddr(), fileName, chunkName)
+			sendToChunkServer(chunk[i:end], getChunkServerAddr(), chunkName)
 		}
 
 	}
 	return nil
 }
-func getChunkServerAddr() string {
+func getChunkServerAddr() serverDomain.ChunkServer {
 	rand.Seed(time.Now().UnixNano())
 	randomNumber := rand.Intn(len(serverDomain.MasterServer.ChunkServers))
-	return serverDomain.MasterServer.ChunkServers[randomNumber].ServerAddr
+	return serverDomain.MasterServer.ChunkServers[randomNumber]
 }
-func sendToChunkServer(offset int, chunk []byte, addr string, fileName string, chunkName string) {
-	port := strings.TrimPrefix(addr, "[::]:")
+func sendToChunkServer(chunk []byte, chunkServer serverDomain.ChunkServer, chunkName string) {
+	port := strings.TrimPrefix(chunkServer.ServerGrpcAddr, "[::]:")
 	opts := grpc.WithInsecure()
 	cc, err := grpc.Dial("localhost:"+port, opts)
 	if err != nil {
@@ -48,11 +52,7 @@ func sendToChunkServer(offset int, chunk []byte, addr string, fileName string, c
 	defer cc.Close()
 
 	client := pb.NewChunkServerServiceClient(cc)
-	serverDomain.FileToChunkMapper[fileName] = append(serverDomain.FileToChunkMapper[fileName], serverDomain.ChunkInfo{
-		ChunkName:  chunkName,
-		ByteOffset: offset,
-	})
-	serverDomain.ChunkToChunkServerMapper[chunkName] = append(serverDomain.ChunkToChunkServerMapper[chunkName], addr)
+	serverDomain.ChunkToChunkServerMapper[chunkName] = append(serverDomain.ChunkToChunkServerMapper[chunkName], chunkServer.ServerRestAddr)
 	request := &pb.ChunkRequest{
 		Chunk:    chunk,
 		FileName: chunkName,

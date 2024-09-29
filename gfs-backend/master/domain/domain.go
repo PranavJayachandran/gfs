@@ -2,14 +2,14 @@ package serverDomain
 
 import (
 	"context"
-	"fmt"
 	"gfs-go/pb"
 
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type ChunkServer struct {
-	ServerAddr        string
+	ServerGrpcAddr    string
+	ServerRestAddr    string
 	ChunkIds          []string
 	MemoryUtilization float32
 }
@@ -20,23 +20,23 @@ type Server struct {
 }
 
 var MasterServer Server
-var ReplicationFactor = 3
+var ReplicationFactor = 2
 
 func (s *Server) HeartBeat(ctx context.Context, req *pb.HeartBeatRequest) (*emptypb.Empty, error) {
 	chunkServer := &ChunkServer{
-		ServerAddr:        req.Addr,
+		ServerGrpcAddr:    req.Rpcaddr,
 		ChunkIds:          req.ChunkIds,
 		MemoryUtilization: req.MemoryUtilization,
+		ServerRestAddr:    req.Restaddr,
 	}
 	s.ChunkServers = addIfNotPresent(s.ChunkServers, *chunkServer)
 	MasterServer = *s
-	fmt.Println(req.Addr)
 	return &emptypb.Empty{}, nil
 }
 
 func addIfNotPresent(c []ChunkServer, element ChunkServer) []ChunkServer {
 	for i, v := range c {
-		if v.ServerAddr == element.ServerAddr {
+		if v.ServerGrpcAddr == element.ServerGrpcAddr {
 			c[i] = element
 			return c
 		}

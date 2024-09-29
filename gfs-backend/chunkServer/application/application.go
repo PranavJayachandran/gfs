@@ -25,7 +25,8 @@ func sendHeartBeatMessage(server *chunkDomain.ChunkServer) {
 
 	client := pb.NewMasterServiceClient(cc)
 	request := &pb.HeartBeatRequest{
-		Addr:              server.Addr,
+		Rpcaddr:           server.RpcAddr,
+		Restaddr:          server.RestAddr,
 		ChunkIds:          server.ChunkIds,
 		MemoryUtilization: float32(server.MemoryUtilization),
 	}

@@ -19,12 +19,15 @@ func Start() {
 }
 func startEndpointServer() {
 	http.HandleFunc("/uploadFile", masterWebController.UploadFile)
+	http.HandleFunc("/getFile", masterWebController.GetFileData)
 	fmt.Println("Http server started at " + constant.MASTER_ENDPOINT)
 	if err := http.ListenAndServe(":"+constant.MASTER_ENDPOINT, nil); err != nil {
 		log.Fatalf("Failed to serve the endpoint")
 	}
 }
 func startGRpcServer() {
+	serverDomain.FileToChunkMapper = make(map[string][]serverDomain.ChunkInfo)
+	serverDomain.ChunkToChunkServerMapper = make(map[string][]string)
 	lis, err := net.Listen("tcp", ":"+constant.MASTER_ADDR_PORT)
 	if err != nil {
 		panic(err)
