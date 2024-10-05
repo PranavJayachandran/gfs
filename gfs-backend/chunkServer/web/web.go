@@ -14,18 +14,15 @@ import (
 	"google.golang.org/grpc"
 )
 
-var server *chunkDomain.ChunkServer
-
 func createRpcServer(ready chan<- struct{}) {
 	lis, err := net.Listen("tcp", ":0")
 	if err != nil {
 		panic(err)
 	}
-	server.RpcAddr = lis.Addr().String()
-	server.RestAddr = lis.Addr().String()
+	chunkDomain.Server.RpcAddr = lis.Addr().String()
 	s := grpc.NewServer()
-	pb.RegisterChunkServerServiceServer(s, server)
-	fmt.Println("localhost:" + server.RpcAddr)
+	pb.RegisterChunkServerServiceServer(s, chunkDomain.Server)
+	fmt.Println("localhost:" + chunkDomain.Server.RpcAddr)
 	close(ready)
 	if err := s.Serve(lis); err != nil {
 		log.Fatal("Fatal to serve grpc server")
@@ -37,19 +34,19 @@ func startRestServer() {
 	if err != nil {
 		panic(err)
 	}
-	server.RestAddr = lis.Addr().String()
+	chunkDomain.Server.RestAddr = lis.Addr().String()
 	if err := http.Serve(lis, nil); err != nil {
 		log.Fatal("Failed to spin up http sever")
 	}
 }
 func Start() {
-	server = &chunkDomain.ChunkServer{RpcAddr: "", ChunkIds: []string{}, MemoryUtilization: 0}
+	chunkDomain.Server = &chunkDomain.ChunkServer{RpcAddr: "", ChunkIds: []string{}, MemoryUtilization: 0}
 	ready := make(chan struct{})
 	go startRestServer()
 	// Forces the start of the heartbeat sending only after the server has been creted
 	go func() {
 		<-ready
-		go chunkApp.SendPeriodicHeartBeat(server)
+		go chunkApp.SendPeriodicHeartBeat(chunkDomain.Server)
 	}()
 	createRpcServer(ready)
 }

@@ -123,6 +123,7 @@ var MasterService_ServiceDesc = grpc.ServiceDesc{
 
 const (
 	ChunkServerService_StoreChunk_FullMethodName = "/ChunkServerService/StoreChunk"
+	ChunkServerService_CopyChunk_FullMethodName  = "/ChunkServerService/CopyChunk"
 )
 
 // ChunkServerServiceClient is the client API for ChunkServerService service.
@@ -130,6 +131,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ChunkServerServiceClient interface {
 	StoreChunk(ctx context.Context, in *ChunkRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	CopyChunk(ctx context.Context, in *CopyChunkRequest, opts ...grpc.CallOption) (*CopyChunkResponse, error)
 }
 
 type chunkServerServiceClient struct {
@@ -150,11 +152,22 @@ func (c *chunkServerServiceClient) StoreChunk(ctx context.Context, in *ChunkRequ
 	return out, nil
 }
 
+func (c *chunkServerServiceClient) CopyChunk(ctx context.Context, in *CopyChunkRequest, opts ...grpc.CallOption) (*CopyChunkResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CopyChunkResponse)
+	err := c.cc.Invoke(ctx, ChunkServerService_CopyChunk_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ChunkServerServiceServer is the server API for ChunkServerService service.
 // All implementations must embed UnimplementedChunkServerServiceServer
 // for forward compatibility.
 type ChunkServerServiceServer interface {
 	StoreChunk(context.Context, *ChunkRequest) (*emptypb.Empty, error)
+	CopyChunk(context.Context, *CopyChunkRequest) (*CopyChunkResponse, error)
 	mustEmbedUnimplementedChunkServerServiceServer()
 }
 
@@ -167,6 +180,9 @@ type UnimplementedChunkServerServiceServer struct{}
 
 func (UnimplementedChunkServerServiceServer) StoreChunk(context.Context, *ChunkRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StoreChunk not implemented")
+}
+func (UnimplementedChunkServerServiceServer) CopyChunk(context.Context, *CopyChunkRequest) (*CopyChunkResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CopyChunk not implemented")
 }
 func (UnimplementedChunkServerServiceServer) mustEmbedUnimplementedChunkServerServiceServer() {}
 func (UnimplementedChunkServerServiceServer) testEmbeddedByValue()                            {}
@@ -207,6 +223,24 @@ func _ChunkServerService_StoreChunk_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ChunkServerService_CopyChunk_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CopyChunkRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChunkServerServiceServer).CopyChunk(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ChunkServerService_CopyChunk_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChunkServerServiceServer).CopyChunk(ctx, req.(*CopyChunkRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ChunkServerService_ServiceDesc is the grpc.ServiceDesc for ChunkServerService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -217,6 +251,10 @@ var ChunkServerService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "StoreChunk",
 			Handler:    _ChunkServerService_StoreChunk_Handler,
+		},
+		{
+			MethodName: "CopyChunk",
+			Handler:    _ChunkServerService_CopyChunk_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

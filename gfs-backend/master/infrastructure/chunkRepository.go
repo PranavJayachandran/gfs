@@ -2,6 +2,8 @@ package masterInfrastructure
 
 import (
 	"context"
+	"fmt"
+	constant "gfs-go/constants"
 	serverDomain "gfs-go/master/domain"
 	"gfs-go/pb"
 	"log"
@@ -18,7 +20,7 @@ func NewChunkRepository() *ChunkRepository {
 	return &ChunkRepository{}
 }
 func (c *ChunkRepository) SaveChunk(chunk []byte, fileName string) error {
-	chunkSize := 10
+	chunkSize := constant.CHUNK_SIZE
 	for i := 0; i < len(chunk); i += chunkSize {
 		end := i + chunkSize
 		if end > len(chunk) {
@@ -30,18 +32,23 @@ func (c *ChunkRepository) SaveChunk(chunk []byte, fileName string) error {
 			ByteOffset: i,
 		})
 		for range serverDomain.ReplicationFactor {
-			sendToChunkServer(chunk[i:end], getChunkServerAddr(), chunkName)
+			go sendToChunkServer(chunk[i:end], getChunkServerAddr(), chunkName)
 		}
-
 	}
 	return nil
 }
-func getChunkServerAddr() serverDomain.ChunkServer {
+func getChunkServerAddr() *serverDomain.ChunkServer {
 	rand.Seed(time.Now().UnixNano())
 	randomNumber := rand.Intn(len(serverDomain.MasterServer.ChunkServers))
-	return serverDomain.MasterServer.ChunkServers[randomNumber]
+	return &serverDomain.MasterServer.ChunkServers[randomNumber]
 }
-func sendToChunkServer(chunk []byte, chunkServer serverDomain.ChunkServer, chunkName string) {
+func sendToChunkServer(chunk []byte, chunkServer *serverDomain.ChunkServer, chunkName string) {
+	memoryUtilisationIncrease := float32(constant.CHUNK_SIZE) / float32(constant.TOTAL_MEMORY)
+	if chunkServer.MemoryUtilization+memoryUtilisationIncrease > 1 {
+		fmt.Println("Couldnt upload to " + chunkServer.ServerGrpcAddr)
+		return
+	}
+	chunkServer.MemoryUtilization += memoryUtilisationIncrease
 	port := strings.TrimPrefix(chunkServer.ServerGrpcAddr, "[::]:")
 	opts := grpc.WithInsecure()
 	cc, err := grpc.Dial("localhost:"+port, opts)

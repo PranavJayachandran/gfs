@@ -8,8 +8,17 @@ service MasterService {
 
 service ChunkServerService{
     rpc StoreChunk(ChunkRequest) returns (google.protobuf.Empty){}
+    rpc CopyChunk(CopyChunkRequest) returns (CopyChunkResponse){}
 }
 
+message CopyChunkRequest{
+    string rpcaddr = 1;
+    string chunkId = 2;
+    bool shouldDelete = 3;
+}
+message CopyChunkResponse{
+    bool successful = 1;
+}
 message HeartBeatRequest {
     string rpcaddr = 1;
     string restaddr = 2;

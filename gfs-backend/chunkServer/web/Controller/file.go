@@ -2,8 +2,8 @@ package ChunkController
 
 import (
 	"fmt"
+	chunkDomain "gfs-go/chunkServer/domain"
 	"io/ioutil"
-	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -18,11 +18,8 @@ func GetFile(w http.ResponseWriter, r *http.Request) {
 	if fileName == "" {
 		http.Error(w, "FileName is required", http.StatusBadRequest)
 	}
-	port := "unknown"
-	if _, portPart, err := net.SplitHostPort(r.Host); err == nil {
-		port = portPart
-	}
-	filePath := filepath.Join("files/[::]:" + port + "/" + fileName)
+	folderName := chunkDomain.Server.RestAddr + chunkDomain.Server.RpcAddr
+	filePath := filepath.Join("files/" + folderName + "/" + fileName)
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		http.Error(w, "File not found"+filePath, http.StatusNotFound)
 		return
