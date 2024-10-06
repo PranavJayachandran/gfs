@@ -46,6 +46,7 @@ func (s *ChunkServer) StoreChunk(ctx context.Context, req *pb.ChunkRequest) (*em
 		fmt.Printf("File %s couldnot be created\n", req.FileName)
 	}
 	s.ChunkIds = append(s.ChunkIds, req.FileName)
+	fmt.Println(req.FileName)
 	s.MemoryUtilization += float32(constant.CHUNK_SIZE) / float32(constant.TOTAL_MEMORY)
 	fmt.Println(s.MemoryUtilization)
 	return &emptypb.Empty{}, nil
@@ -64,15 +65,27 @@ func (s *ChunkServer) CopyChunk(ctx context.Context, req *pb.CopyChunkRequest) (
 		Chunk:    getChunk(req.ChunkId),
 		FileName: req.ChunkId,
 	}
-	fmt.Println(req.ChunkId)
+	fmt.Println(req.ChunkId, req.Rpcaddr)
 	_, err = client.StoreChunk(context.Background(), request)
 	if err != nil {
 		log.Fatal(err)
 	}
 	//Todo Should delete if req.ShouldDelete is true
+	deleteFile(req.ChunkId)
 	return &pb.CopyChunkResponse{
 		Successful: true,
 	}, nil
+}
+func deleteFile(fileName string) {
+	folderName := Server.RestAddr + Server.RpcAddr
+	filePath := filepath.Join("files/" + folderName + "/" + fileName)
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		log.Fatal(err)
+	}
+	e := os.Remove(filePath)
+	if e != nil {
+		log.Fatal(e)
+	}
 }
 func getChunk(fileName string) []byte {
 	folderName := Server.RestAddr + Server.RpcAddr

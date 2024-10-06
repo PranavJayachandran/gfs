@@ -37,10 +37,15 @@ func (s *Server) HeartBeat(ctx context.Context, req *pb.HeartBeatRequest) (*empt
 	s.ChunkServers = addIfNotPresent(s.ChunkServers, *chunkServer)
 	MasterServer = *s
 	if req.MemoryUtilization == 0 { // New registration
-		fmt.Println("NEW")
 		reallocation(len(s.ChunkServers) - 1)
 	}
-	fmt.Printf("Heartbeat from %s with utilization %f\n", chunkServer.ServerGrpcAddr, chunkServer.MemoryUtilization)
+	fmt.Printf("Heartbeat from %s with utilization %f ", chunkServer.ServerGrpcAddr, chunkServer.MemoryUtilization)
+	fmt.Print("ChunkIds")
+
+	for _, chunk := range req.ChunkIds {
+		fmt.Print(chunk + " ")
+	}
+	fmt.Println()
 	return &emptypb.Empty{}, nil
 }
 
@@ -66,12 +71,11 @@ func reallocation(index int) {
 	var round = 0
 	for MasterServer.ChunkServers[index].MemoryUtilization < 0.5 {
 		var send = false
-		fmt.Println("HEasdsadRE")
 		for _, chunk := range overloadedChunkServers {
-			fmt.Println(len(chunk.ChunkIds))
 			if len(chunk.ChunkIds) > round {
 				copyChunk(chunk.ServerGrpcAddr, MasterServer.ChunkServers[index].ServerGrpcAddr, chunk.ChunkIds[round])
 				send = true
+
 			}
 		}
 		if !send {
@@ -82,7 +86,6 @@ func reallocation(index int) {
 }
 
 func copyChunk(fromAddr string, toAddr string, chunkId string) {
-	fmt.Println("HERe")
 	port := strings.TrimPrefix(fromAddr, "[::]:")
 	opts := grpc.WithInsecure()
 	cc, err := grpc.Dial("localhost:"+port, opts)
@@ -95,10 +98,11 @@ func copyChunk(fromAddr string, toAddr string, chunkId string) {
 	request := &pb.CopyChunkRequest{
 		ChunkId:      chunkId,
 		Rpcaddr:      toAddr,
-		ShouldDelete: false,
+		ShouldDelete: true,
 	}
 	_, err = client.CopyChunk(context.Background(), request)
 	if err != nil {
+		fmt.Println(fromAddr)
 		log.Fatal(err)
 	}
 }
