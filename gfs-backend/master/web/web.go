@@ -27,7 +27,7 @@ func startEndpointServer() {
 }
 func startGRpcServer() {
 	serverDomain.FileToChunkMapper = make(map[string][]serverDomain.ChunkInfo)
-	serverDomain.ChunkToChunkServerMapper = make(map[string][]string)
+	serverDomain.ChunkToChunkServerMapper = make(map[string][]serverDomain.ChunkServer)
 	lis, err := net.Listen("tcp", ":"+constant.MASTER_ADDR_PORT)
 	if err != nil {
 		panic(err)

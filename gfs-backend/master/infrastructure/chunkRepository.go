@@ -59,7 +59,7 @@ func sendToChunkServer(chunk []byte, chunkServer *serverDomain.ChunkServer, chun
 	defer cc.Close()
 
 	client := pb.NewChunkServerServiceClient(cc)
-	serverDomain.ChunkToChunkServerMapper[chunkName] = append(serverDomain.ChunkToChunkServerMapper[chunkName], chunkServer.ServerRestAddr)
+	serverDomain.ChunkToChunkServerMapper[chunkName] = append(serverDomain.ChunkToChunkServerMapper[chunkName], *chunkServer)
 	request := &pb.ChunkRequest{
 		Chunk:    chunk,
 		FileName: chunkName,

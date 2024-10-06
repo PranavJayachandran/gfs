@@ -13,4 +13,4 @@ type ChunkToChunkServer struct {
 var FileToChunkMapper map[string][]ChunkInfo
 
 // This will stor the chunk to restApi map for each chunk
-var ChunkToChunkServerMapper map[string][]string
+var ChunkToChunkServerMapper map[string][]ChunkServer

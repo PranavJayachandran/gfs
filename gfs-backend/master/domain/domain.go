@@ -7,6 +7,7 @@ import (
 	"log"
 	"sort"
 	"strings"
+	"sync"
 
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -17,6 +18,7 @@ type ChunkServer struct {
 	ServerRestAddr    string
 	ChunkIds          []string
 	MemoryUtilization float32
+	Lock              *sync.Mutex
 }
 
 type Server struct {
@@ -73,9 +75,7 @@ func reallocation(index int) {
 		var send = false
 		for _, chunk := range overloadedChunkServers {
 			if len(chunk.ChunkIds) > round {
-				copyChunk(chunk.ServerGrpcAddr, MasterServer.ChunkServers[index].ServerGrpcAddr, chunk.ChunkIds[round])
-				send = true
-
+				go copyChunk(chunk, MasterServer.ChunkServers[index].ServerGrpcAddr, chunk.ChunkIds[round])
 			}
 		}
 		if !send {
@@ -85,7 +85,8 @@ func reallocation(index int) {
 	}
 }
 
-func copyChunk(fromAddr string, toAddr string, chunkId string) {
+func copyChunk(chunkServer ChunkServer, toAddr string, chunkId string) {
+	fromAddr := chunkServer.ServerGrpcAddr
 	port := strings.TrimPrefix(fromAddr, "[::]:")
 	opts := grpc.WithInsecure()
 	cc, err := grpc.Dial("localhost:"+port, opts)
@@ -95,7 +96,9 @@ func copyChunk(fromAddr string, toAddr string, chunkId string) {
 
 	}
 	defer cc.Close()
+	defer chunkServer.Lock.Unlock()
 
+	chunkServer.Lock.Lock()
 	client := pb.NewChunkServerServiceClient(cc)
 	request := &pb.CopyChunkRequest{
 		ChunkId:      chunkId,

@@ -50,8 +50,13 @@ func GetFileData(w http.ResponseWriter, r *http.Request) {
 	var ChunkData = serverDomain.FileToChunkMapper[fileName]
 	ChunkToChunkServerData := make([]serverDomain.ChunkToChunkServer, 0)
 	for _, item := range ChunkData {
+		var chunkServerAddrs []string
+		for _, element := range serverDomain.ChunkToChunkServerMapper[item.ChunkName] {
+			chunkServerAddrs = append(chunkServerAddrs, element.ServerRestAddr)
+		}
+
 		ChunkToChunkServerData = append(ChunkToChunkServerData, serverDomain.ChunkToChunkServer{
-			ChunkServerAddr: serverDomain.ChunkToChunkServerMapper[item.ChunkName],
+			ChunkServerAddr: chunkServerAddrs,
 			ChunkName:       item.ChunkName,
 		})
 	}
