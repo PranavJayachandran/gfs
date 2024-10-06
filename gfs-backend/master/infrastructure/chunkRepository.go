@@ -53,7 +53,7 @@ func sendToChunkServer(chunk []byte, chunkServer *serverDomain.ChunkServer, chun
 	opts := grpc.WithInsecure()
 	cc, err := grpc.Dial("localhost:"+port, opts)
 	if err != nil {
-		log.Fatal(err)
+		log.Println("Unable to connect to the rpc server of " + port)
 	}
 
 	defer cc.Close()
@@ -66,6 +66,6 @@ func sendToChunkServer(chunk []byte, chunkServer *serverDomain.ChunkServer, chun
 	}
 	_, err = client.StoreChunk(context.Background(), request)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("Store chunk %s to %s failed\n", chunkName, port)
 	}
 }

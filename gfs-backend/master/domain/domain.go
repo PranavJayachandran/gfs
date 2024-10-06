@@ -90,7 +90,9 @@ func copyChunk(fromAddr string, toAddr string, chunkId string) {
 	opts := grpc.WithInsecure()
 	cc, err := grpc.Dial("localhost:"+port, opts)
 	if err != nil {
-		log.Fatal(err)
+		log.Println("Fatal to connect to rpc server of " + fromAddr)
+		return
+
 	}
 	defer cc.Close()
 
@@ -102,7 +104,6 @@ func copyChunk(fromAddr string, toAddr string, chunkId string) {
 	}
 	_, err = client.CopyChunk(context.Background(), request)
 	if err != nil {
-		fmt.Println(fromAddr)
-		log.Fatal(err)
+		fmt.Printf("Copy chunk %s from %s to %s failed\n", chunkId, fromAddr, toAddr)
 	}
 }

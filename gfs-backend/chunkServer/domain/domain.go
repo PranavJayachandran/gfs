@@ -56,19 +56,23 @@ func (s *ChunkServer) CopyChunk(ctx context.Context, req *pb.CopyChunkRequest) (
 	opts := grpc.WithInsecure()
 	cc, err := grpc.Dial("localhost:"+port, opts)
 	if err != nil {
-		log.Fatal(err)
+		log.Println("Could spin up the grpc connection for " + port)
 	}
 	defer cc.Close()
 
 	client := pb.NewChunkServerServiceClient(cc)
+	chunk, err := getChunk(req.ChunkId)
+	if err != nil {
+		return nil, err
+	}
 	request := &pb.ChunkRequest{
-		Chunk:    getChunk(req.ChunkId),
+		Chunk:    chunk,
 		FileName: req.ChunkId,
 	}
 	fmt.Println(req.ChunkId, req.Rpcaddr)
 	_, err = client.StoreChunk(context.Background(), request)
 	if err != nil {
-		log.Fatal(err)
+		log.Println("Storing of chunk Failed for ", req.ChunkId+" in rpc server with port "+req.Rpcaddr)
 	}
 	//Todo Should delete if req.ShouldDelete is true
 	deleteFile(req.ChunkId)
@@ -80,24 +84,28 @@ func deleteFile(fileName string) {
 	folderName := Server.RestAddr + Server.RpcAddr
 	filePath := filepath.Join("files/" + folderName + "/" + fileName)
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		log.Fatal(err)
+		log.Println(err)
+		return
 	}
 	e := os.Remove(filePath)
 	if e != nil {
-		log.Fatal(e)
+		log.Println("Delete failed for " + filePath)
+		return
 	}
 }
-func getChunk(fileName string) []byte {
+func getChunk(fileName string) ([]byte, error) {
 	folderName := Server.RestAddr + Server.RpcAddr
 	filePath := filepath.Join("files/" + folderName + "/" + fileName)
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		log.Fatal(err)
+		log.Println("No file found for " + filePath)
+		return nil, err
 	}
 
 	// Read the file contents
 	content, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		fmt.Println(err)
+		log.Println("Couldn't read file " + filePath)
+		return nil, err
 	}
-	return content
+	return content, nil
 }

@@ -21,7 +21,8 @@ func sendHeartBeatMessage(server *chunkDomain.ChunkServer) {
 	opts := grpc.WithInsecure()
 	cc, err := grpc.Dial("localhost:"+constant.MASTER_ADDR_PORT, opts)
 	if err != nil {
-		log.Fatal(err)
+		log.Println("Unable to connect to the rpc server of " + constant.MASTER_ADDR_PORT)
+		return
 	}
 
 	defer cc.Close()
@@ -37,7 +38,7 @@ func sendHeartBeatMessage(server *chunkDomain.ChunkServer) {
 	}
 	_, err = client.HeartBeat(context.Background(), request)
 	if err != nil {
-		log.Fatal(err)
+		log.Println("HeartBeat Failed")
 	}
 }
 func SendPeriodicHeartBeat(server *chunkDomain.ChunkServer) {
